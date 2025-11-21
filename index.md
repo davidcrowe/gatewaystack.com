@@ -5,52 +5,62 @@ title: gatewaystack
 
 # gatewaystack
 
-**Secure user-scoped authentication for LLM apps using the Apps SDK and Model Context Protocol (MCP)**
+**user-scoped authentication and governance for llm and agentic apps (apps sdk + mcp)**
+  
+  
+until now, most AI systems have been built around model access, not **user identity**.
 
-Until now, most AI systems have been built around model access, not **user identity**.
+access typically happens through a single api key — often shared across a team, department, or entire organization.
 
-Access typically happens through a single API key — often shared across a team, department, or entire organization.
-
-That makes it impossible to answer basic questions:
+that makes it impossible to answer basic questions:
 
 - *who made this request?*
 - *what are they allowed to do?*
 - *did it follow policy?*
 - *what did it cost?*
 
-## Why Now?
+## at a glance
 
-As organizations adopt agentic systems and user-specific AI workflows, identity, policy, and governance become mandatory. Shared API keys cannot support enterprise-grade access control or compliance.
+gatewaystack is a user-scoped **trust and governance gateway** for llm apps.  
+it lets you:
 
-A new layer is required—centered around users, not models.
+- plug openai's apps sdk / mcp into your identity provider
+- enforce per-user and per-tenant model/tool access
+- route, rate-limit, and log every call at the user level
 
-## Designing a User-Scoped AI Trust & Governance Gateway
+## why now?
 
-A new layer is emerging in the modern AI stack:
+as organizations adopt agentic systems and user-specific AI workflows, identity, policy, and governance become mandatory. shared api keys cannot support enterprise-grade access control or compliance.
+
+a new layer is required—centered around users, not models.
+
+## designing a user-scoped AI trust & governance gateway
+
+a new layer is emerging in the modern AI stack:
 
 > **the user-scoped trust and governance gateway**
 
-It sits between applications (or agents) and model providers, ensuring that **every request is authenticated, authorized, observable, and governed.**
+it sits between applications (or agents) and model providers, ensuring that **every request is authenticated, authorized, observable, and governed.**
 
 **gatewaystack** defines this layer.
 
-gatewaystack sits between your application and the LLM provider. It receives identity-bound requests (via OIDC or Apps SDK tokens), applies governance, and then forwards the request to the model.
+gatewaystack sits between your application and the llm provider. it receives identity-bound requests (via oidc or apps sdk tokens), applies governance, and then forwards the request to the model.
 
-It provides the foundational primitives every agent ecosystem needs — starting with secure user authentication and expanding into full lifecycle governance.
+it provides the foundational primitives every agent ecosystem needs — starting with secure user authentication and expanding into full lifecycle governance.
 
-## The Core Modules
+## the core modules
 
-**1. identifiabl – User identity & authentication**
+**1. `identifiabl` – user identity & authentication**
 
-Every model call must be tied to a real user, tenant, and context. identifiabl verifies identity, handles OIDC/App SDK tokens, and attaches identity metadata to each request.
+every model call must be tied to a real user, tenant, and context. identifiabl verifies identity, handles oidc/app sdk tokens, and attaches identity metadata to each request.
 
-**2. transformabl — Content transformation & safety pre-processing**
+**2. `transformabl` — content transformation & safety pre-processing**
 
-Before a request can be validated or routed, its content must be transformed into a safe, structured, model-ready form.
+before a request can be validated or routed, its content must be transformed into a safe, structured, model-ready form.
 
 transformabl handles all pre-model transformations, including:
 
-- PII detection and redaction
+- pii detection and redaction
 - content classification (legal, sensitive, unsafe)
 - safety pre-processing (jailbreak detection, harmful content)
 - input segmentation (safe vs unsafe regions)
@@ -59,11 +69,11 @@ transformabl handles all pre-model transformations, including:
 - metadata extraction (topics, intent, sentiment, risk)
 - generating routing hints based on detected patterns
 
-This layer ensures that the request entering validatabl and proxyabl is clean, safe, and structured, enabling fine-grained governance and more intelligent routing decisions.
+this layer ensures that the request entering validatabl and proxyabl is clean, safe, and structured, enabling fine-grained governance and more intelligent routing decisions.
 
-**3. validatabl – Access & policy enforcement**
+**3. `validatabl` – access & policy enforcement**
 
-Once a request is tied to a user, validatabl ensures it follows your rules:
+once a request is tied to a user, validatabl ensures it follows your rules:
 
 - tool- and model-level permissions
 - org-level policies
@@ -71,21 +81,21 @@ Once a request is tied to a user, validatabl ensures it follows your rules:
 - tenant boundaries
 - scopes & roles
 
-This is where most governance decisions happen.
+this is where most governance decisions happen.
 
-**4. proxyabl – In-path routing & enforcement**
+**4. `proxyabl` – in-path routing & enforcement**
 
 proxyabl is the gateway itself — the in-path request processor that:
 
-- forwards traffic to an LLM
+- forwards traffic to an llm
 - chooses providers or models
 - injects identity metadata
 - applies routing rules
 - enforces rate limits and policies in-path
 
-**5. limitabl – Rate limits, quotas, and spend controls**
+**5. `limitabl` – rate limits, quotas, and spend controls**
 
-Every user, org, or agent needs usage constraints:
+every user, org, or agent needs usage constraints:
 
 - per-user rate limits
 - per-org quotas
@@ -95,9 +105,9 @@ Every user, org, or agent needs usage constraints:
 
 limitabl enforces these constraints consistently for all calls.
 
-**6. explicabl – Observability & audit**
+**6. `explicabl` – observability & audit**
 
-The control plane must record:
+the control plane must record:
 
 - who did what
 - what model they used
@@ -107,59 +117,96 @@ The control plane must record:
 
 explicabl provides the audit logs, traces, and metadata needed for trust, security, debugging, and compliance.
 
-## End to End Flow
+## end to end flow
 
 ```text
-User
+user
    → identifiabl       (who is calling?)
    → transformabl      (prepare, clean, classify, anonymize)
    → validatabl        (is this allowed?)
    → proxyabl          (where does it go?)
    → limitabl          (how much can they use?)
    → explicabl         (what happened?)
-   → LLM provider
+   → llm provider
    → response
 ```
 
-Each module intercepts the request, adds or checks metadata, and guarantees that the call is:
+each module intercepts the request, adds or checks metadata, and guarantees that the call is:
 
 identified, transformed, validated, routed, constrained, and audited.
 
-This is the foundation of user-scoped AI.
+this is the foundation of user-scoped AI.
 
-## Inputs
+<div class="arch-diagram">
+  <div class="arch-row">
+    <div class="arch-node">
+      <div class="arch-node-title">app / agent</div>
+      <div class="arch-node-sub">chat ui · internal tool · agent runtime</div>
+    </div>
 
-- OIDC tokens / App SDK identity tokens
-- User context (user_id, org_id, roles, scopes)
-- Model request (messages, params, attachments)
-- Configured policies
-- Routing rules
-- Quota & budget settings
+    <div class="arch-arrow">→</div>
 
-## Outputs
+    <div class="arch-node arch-node-gateway">
+      <div class="arch-node-title">gatewaystack</div>
+      <div class="arch-node-sub">user-scoped trust & governance gateway</div>
 
-- Authenticated, user-bound request
-- Policy decision (allow, deny, modify)
-- Routing decision (provider/model/tool)
-- Enforced limits (rate, cost, budgets)
-- Full audit log + runtime metadata
+      <div class="arch-pill-row">
+        <span class="arch-pill">identifiabl</span>
+        <span class="arch-pill">transformabl</span>
+        <span class="arch-pill">validatabl</span>
+        <span class="arch-pill">proxyabl</span>
+        <span class="arch-pill">limitabl</span>
+        <span class="arch-pill">explicabl</span>
+      </div>
+    </div>
 
-## Integrates with Your Existing Stack
+    <div class="arch-arrow">→</div>
+
+    <div class="arch-node">
+      <div class="arch-node-title">llm providers</div>
+      <div class="arch-node-sub">openai · anthropic · internal models</div>
+    </div>
+  </div>
+
+  <p class="arch-caption">
+    every request flows from your app through gatewaystack’s modules before it reaches an llm provider –
+    <strong>identified, transformed, validated, routed, constrained, and audited.</strong>
+  </p>
+</div>
+
+
+## inputs
+
+- oidc tokens / app sdk identity tokens
+- user context (user_id, org_id, roles, scopes)
+- model request (messages, params, attachments)
+- configured policies
+- routing rules
+- quota & budget settings
+
+## outputs
+
+- authenticated, user-bound request
+- policy decision (allow, deny, modify)
+- routing decision (provider/model/tool)
+- enforced limits (rate, cost, budgets)
+- full audit log + runtime metadata
+
+## integrates with your existing stack
 
 gatewaystack works natively with:
 
-- ChatGPT Apps SDK (identity tokens)
-- Model Context Protocol (MCP)
-- OAuth2 / OIDC identity providers
-- Any LLM provider (OpenAI, Anthropic, Google, and internal models)
+- chatgpt apps sdk (identity tokens)
+- model context protocol (mcp)
+- oauth2 / oidc identity providers
+- any llm provider (openai, anthropic, google, and internal models)
 
-It acts as a drop-in governance layer without requiring changes to your application logic.
+it acts as a drop-in governance layer without requiring changes to your application logic.
 
+## links
 
-## Links
+want to explore the modules in detail?  
+→ [view the gatewaystack github repo](https://github.com/davidcrowe/gatewaystack)
 
-Want to explore the modules in detail? 
-[gatewaystack GitHub repo](https://github.com/davidcrowe/gatewaystack)
-
-Or contact us to discuss enterprise deployments:
-[reducibl applied ai studio](https://reducibl.com)
+or contact us to discuss enterprise deployments:  
+→ [reducibl applied ai studio](https://reducibl.com)
