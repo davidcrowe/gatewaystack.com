@@ -5,8 +5,12 @@ title: gatewaystack
 
 # gatewaystack
 
-**user-scoped authentication and governance for llm and agentic apps (apps sdk + mcp)**
-  
+**agentic control plane for user-scoped AI governance**
+
+an open-source control plane that makes AI agents **enterprise-ready** by enforcing user-scoped identity, policy, and audit trails on every model call.
+
+> ⚠️ early-stage: gatewaystack is under active development. the first layer, `identifiabl`, is live and published (`npm i identifiabl`). Additional modules (`transformabl`, `validatabl`, `limitabl`, `proxyabl`, `explicabl`) are on the roadmap.
+
 until now, most ai systems have been built around model access, not **user identity**.
 
 access typically happens through a single api key — often shared across a team, department, or entire organization.
@@ -31,6 +35,10 @@ it lets you:
 - transform requests before they hit the model (for example, to remove pii)  
 - route, rate-limit, and log every call at the user level  
 
+→ [view the gatewaystack github repo](https://github.com/davidcrowe/gatewaystack)  
+→ [read the architecture overview](#designing-a-user-scoped-ai-trust--governance-gateway)  
+→ [contact reducibl for enterprise deployments](https://reducibl.com)  
+
 ## why now?
 
 as organizations adopt agentic systems and user-specific ai workflows, identity, policy, and governance become mandatory. shared api keys cannot support enterprise-grade access control or compliance.
@@ -39,51 +47,138 @@ a new layer is required — centered around users, not models.
 
 > **the user-scoped trust and governance gateway**
 
-## who gatewaystack is for
 
-gatewaystack is built for teams that need **user-scoped, auditable, policy-enforced access to ai models** — not just raw model access behind a shared api key.
+### the three-party problem
 
-it is especially useful for:
+modern AI apps are really **three-party systems**:
 
-### platform & ai infrastructure teams
+**the user** — a real human with identity, roles, and permissions  
+**the llm** — a model acting on their behalf (chatgpt, claude)  
+**your backend** — the trusted data and tools the model needs to access  
 
-teams rolling out internal copilots, agent runtimes, or ai-powered tools across the organization. they need to ensure:
+these three parties all talk to each other, but they don’t share a common, cryptographically verified identity layer.
 
-- every model call is tied to a specific employee  
-- roles and scopes determine exactly which tools they can use  
-- requests never reach external models unless policy allows  
+**the gap:** The llm knows who the user is (they logged into chatgpt). your backend doesn't. So it can't:
+- filter data per-user (*"show me my calendar"* → returns everyone's calendar)
+- enforce per-user policies (*"only doctors use medical models"* → anyone can)
+- audit by user (*"who made this query?"* → can't answer)
 
-### security, governance & compliance teams
+**without a unifying identity layer, you get:**
+- shared API keys (everyone sees everything, or no one sees anything)
+- no enforcement ("who can use which models for what")
+- no audit trail (can't prove compliance)
+- enterprises block AI access entirely (too risky)
 
-organizations where regulatory or internal controls matter:
+this instability across user ↔ LLM ↔ backend is what Gatewaystack calls the **Three-Party Problem**. 
 
-- finance and legal workflows  
-- healthcare and life sciences  
-- enterprise data governance  
-- soc 2 / hipaa / pci environments  
+it shows up in two directions:
 
-they need "who did what" audit trails, per-user enforcement, pii handling, and policy guarantees.
+### when the three-party problem goes wrong
 
-### saas platforms serving many tenants
+while gatewaystack doesn't necessarily solve the root cause of each issue, it would have prevented these resources from being accessed without a cryptographically verified user identity on the request. 
 
-multi-tenant products that want to:
+user-scoped requests act as a safety net for all kinds of common mistakes:  
 
-- differentiate features by plan or tier  
-- enforce per-user and per-tenant quotas  
-- separate customer data paths  
-- prevent shared "one big openai key" usage  
+→ [xAI Dev Leaks API Key for Private SpaceX, Tesla LLMs](https://krebsonsecurity.com/2025/05/xai-dev-leaks-api-key-for-private-spacex-tesla-llms/?utm_source=chatgpt.com)  
+→ [DeepSeek database left user data, chat histories exposed for anyone to see](https://www.theverge.com/news/603163/deepseek-breach-ai-security-database-exposed?utm_source=chatgpt.com)  
+→ [How I Reverse Engineered a Billion-Dollar Legal AI Tool and Found 100k+ Confidential Files](https://alexschapiro.com/security/vulnerability/2025/12/02/filevine-api-100k)  
+→ [Leading AI Companies Accidentally Leak Their Passwords and Digital Keys on GitHub - What You Need to Know](https://www.fortra.com/blog/ai-companies-accidentally-leak-passwords-digital-keys-github?utm_source=chatgpt.com)  
 
-gatewaystack turns every model call into a **user-bound, tenant-aware interaction**.
 
-### teams building apps sdk- and mcp-powered agents
+### direction 1: enterprises controlling who can use which models and tools
+*"how do i ensure only **licensed doctors** use medical models, only **analysts** access financial data, and **contractors** can't send sensitive prompts?"*
 
-developers integrating their apps directly into chatgpt or exposing data/tools via mcp:
+> user ↔ backend ↔ llm
 
-- validate and map apps sdk tokens to real identities  
-- thread identity through all downstream tools  
-- attach user/org/tenant metadata without custom plumbing  
+**without gatewaystack:**
+```typescript
+app.post('/chat', async (req, res) => {
+  const { model, prompt } = req.body;
+  const response = await openai.chat.completions.create({
+    model, // Anyone can use gpt-4-medical
+    messages: [{ role: 'user', content: prompt }]
+  });
+  res.json(response);
+});
+```
 
-gatewaystack becomes the unified **identity → policy → routing → audit** path for all agent interactions.
+**with gatewaystack:**
+```typescript
+app.post('/chat', async (req, res) => {
+  const userId = req.headers['x-user-id'];
+  const userRole = req.headers['x-user-role']; // "doctor", "analyst", etc.
+  const userScopes = req.headers['x-user-scopes']?.split(' ') || [];
+  
+  // Gateway already enforced: only doctors with medical:write can reach here
+  const response = await openai.chat.completions.create({
+    model: req.body.model,
+    messages: [{ role: 'user', content: req.body.prompt }],
+    user: userId // OpenAI audit trail
+  });
+  res.json(response);
+});
+```
+
+**gateway policy:**
+```json
+{
+  "gpt-4-medical": {
+    "requiredRoles": ["doctor", "physician_assistant"],
+    "requiredScopes": ["medical:write"]
+  }
+}
+```
+
+the gateway enforces role + scope checks **before** forwarding to your backend. If a nurse tries to use `gpt-4-medical`, they get `403 Forbidden`.
+
+---
+
+### direction 2: users accessing their own data via AI
+*"how do i let chatgpt read **my** calendar without exposing **everyone's** calendar?"*
+
+> user ↔ llm ↔ backend
+
+**without gatewaystack:**
+```typescript
+app.get('/calendar', async (_req, res) => {
+  const events = await getAllEvents(); // Everyone sees everything
+  res.json(events);
+});
+```
+
+**with gatewaystack:**
+```typescript
+app.get('/calendar', async (req, res) => {
+  const userId = req.headers['x-user-id']; // Verified by gateway
+  const events = await getUserEvents(userId);
+  res.json(events);
+});
+```
+
+the gateway validates the oauth token, extracts the user identity, and injects `X-User-Id` — so your backend can safely filter data per-user.
+
+---
+
+### why both directions matter
+attaching a cryptographically confirmed user identity to a shared request context is the key that makes request level governance possible:
+
+**without solving the three-party problem, you can't:**
+- filter data per-user (direction 1: everyone sees everything)
+- enforce "who can use which models" (direction 2: no role-based access)
+- audit "who did what" (compliance impossible)
+- rate limit per-user (shared quotas get exhausted)
+- attribute costs (can't charge back to teams/users)
+
+**gatewaystack solves both** by binding cryptographic user identity to every AI request:
+
+* oauth login per user (rs256 jwt, cryptographic identity proof)
+* per-user / per-tenant data isolation by default
+* deny-by-default authorization (scopes per tool/model/role)
+* immutable audit trails (who, what, when, which model)
+* rate limits & spend caps (per user/team/org)
+* drop-in between AI clients and your backend (no sdk changes)
+
+gatewaystack is composed of modular packages that can run **standalone** or as a cohesive **six-layer pipeline** for complete AI governance.
 
 ## designing a user-scoped ai trust & governance gateway
 
@@ -96,8 +191,6 @@ gatewaystack sits between your application and the llm provider. it receives ide
 it provides the foundational primitives every agent ecosystem needs — starting with secure user authentication and expanding into full lifecycle governance.
 
 ## the core modules
-
-**CHANGE: Reordered to match execution flow - moved limitabl before proxyabl**
 
 **1. [`identifiabl`](https://identifiabl.com) — user identity & authentication**
 
@@ -176,6 +269,102 @@ explicabl provides the audit logs, traces, and metadata needed for trust, securi
 
 > 📦 **implementation**: [`ai-observability-gateway`](https://github.com/davidcrowe/gatewaystack) + `ai-audit-gateway` (roadmap)
 
+## who gatewaystack is for
+
+gatewaystack is built for teams that need **user-scoped, auditable, policy-enforced access to ai models** — not just raw model access behind a shared api key.
+
+- platform & ai infra teams
+- security / governance / compliance
+- multi-tenant saas products
+- teams building apps sdk- and mcp-powered agents
+
+**example use cases:**
+
+### healthcare saas — hipaa-compliant AI diagnostics
+
+a platform with 10,000+ doctors needs to ensure every AI-assisted diagnosis is tied to the licensed physician who requested it, with full audit trails for hipaa and internal review.
+
+**before gatewaystack:** all AI calls run through a shared openai key — impossible to prove *which physician* made *which request*.
+
+**with gatewaystack:** 
+- `identifiabl` binds every request to a verified physician (`user_id`, `org_id` = clinic/hospital)
+- `validatabl` enforces `role:physician` and `scope:diagnosis:write` per tool
+- `explicabl` emits immutable audit logs with the physician's identity on every model call
+
+**result:** user-bound, tenant-aware, fully auditable AI diagnostics.
+
+---
+
+### enterprise copilot — per-employee policy enforcement
+
+a global company rolls out an internal copilot that can search confluence, jira, google drive, and internal apis. employees authenticate with sso (okta / entra / auth0), but the copilot calls the llm with a shared api key.
+
+**before gatewaystack:** security teams can't enforce "only finance analysts can run this tool" or audit which employee triggered which action.
+
+**with gatewaystack:**
+- `identifiabl` binds the copilot session to the employee's SSO identity (`sub` from okta)
+- `validatabl` enforces per-role tool access ("legal can see these repos, not those")
+- `limitabl` applies per-user rate limits and spend caps
+- `explicabl` produces identity-level audit trails for every copilot interaction
+
+**result:** full identity-level governance without changing the copilot's business logic.
+
+---
+
+### multi-tenant saas — per-tenant cost tracking
+
+a saas platform offers AI features across free, pro, and enterprise tiers. today, all AI usage runs through a single openai key per environment — making it impossible to answer "how much did org x spend?" or "which users hit quota?"
+
+**before gatewaystack:** one big shared key. no tenant-level attribution. cost overruns are invisible until the bill arrives.
+
+**with gatewaystack:**
+- `identifiabl` attaches `user_id` and `org_id` to every request
+- `validatabl` enforces tier-based feature access (`plan:free`, `plan:pro`, `feature:advanced-rag`)
+- `limitabl` enforces per-tenant quotas and budgets
+- `explicabl` produces per-tenant usage reports
+
+**result:** per-tenant accountability without changing app logic.
+
+---
+
+## what's different from traditional api gateways?
+
+**identity providers (auth0, okta, cognito, entra id)**  
+Handle login and token minting, but stop at the edge of your app. They don't understand model calls, tools, or which provider a request is going to — and they don't enforce user identity inside the AI gateway.
+
+**api gateways and service meshes (kong, apigee, aws api gateway, istio, envoy)**  
+great at path/method-level auth and rate limiting, but they treat llms like any other http backend. **you can build AI governance on top of them** (kong plugins, istio policies, lambda authorizers), **but it requires significant custom development** to replicate what gatewaystack provides out-of-the-box: user-scoped identity normalization, per-tool scope enforcement, pre-flight cost checks, apps sdk / mcp compliance, and AI-specific audit trails.
+
+**cloud AI gateways (cloudflare AI gateway, azure openai + api management, vertex AI, bedrock guardrails)**  
+Focus on provider routing, quota, and safety filters at the tenant or API key level. User identity is usually out-of-band or left to the application.
+
+**hand-rolled middleware**  
+many teams glue together jwt validation, headers, and logging inside their app or a thin node/go proxy. it works... until you need to support multiple agents, providers, tenants, and audit/regulatory requirements.
+
+**gatewaystack is different:**
+- **user-scoped by default** — every request is tied to a verified user, not a shared key
+- **model-aware** — understands tools, scopes, and provider semantics (apps sdk, mcp, openai, anthropic)
+- **composable governance** — each layer (identity, policy, limits, routing, audit) can run standalone or as part of the full control plane
+- **built for agents** — prevents runaway loops, enforces per-workflow budgets, and tracks multi-step traces
+
+**example: kong + openai**
+
+to get user-scoped AI governance with kong, you'd need to:
+1. install `jwt` plugin (validate tokens)
+2. install `request-transformer` plugin (inject headers)
+3. write custom Lua script to normalize identity claims
+4. write custom Lua script for scope-to-tool mapping
+5. write custom plugin for pre-flight cost estimation
+6. build separate service for Protected Resource Metadata
+7. configure DCR flow manually
+8. build custom audit log forwarding
+
+**signficant development + ongoing maintenance.**
+
+**with gatewaystack:** configure `.env` file, deploy, done.
+
+you can still run gatewaystack alongside traditional api gateways — it's the **user-scoped identity and governance slice** of your AI stack.
+
 ## end to end flow
 ```text
 user
@@ -199,8 +388,6 @@ this is the foundation of user-scoped ai.
 ## how teams adopt gatewaystack
 
 most teams don't roll out every module on day one. a common path looks like:
-
-**CHANGE: Added note about limitabl's two-phase operation**
 
 1. **start with identifiabl + proxyabl**  
    - front your existing llm provider with a simple gateway  
@@ -233,26 +420,6 @@ a finance analyst uses an internal copilot to summarize a contract.
 - explicabl records a full audit event for compliance  
 
 every step is user-bound, governed, and auditable.
-
-## error handling
-
-**CHANGE: NEW SECTION - Critical for production deployments**
-
-gatewaystack modules use a **fail-safe strategy** based on the security/availability tradeoff:
-
-| module | on failure | reason |
-|--------|-----------|--------|
-| **identifiabl** | deny (fail closed) | no anonymous requests allowed |
-| **transformabl** | continue (fail open) | allow untransformed content with warning |
-| **validatabl** | deny (fail closed) | safety first — block when policy engine fails |
-| **limitabl (pre-flight)** | continue (fail open) | favor availability over limit enforcement |
-| **proxyabl** | fallback → error | try alternative providers, then return error |
-| **limitabl (accounting)** | log error | accounting failure shouldn't block response delivery |
-| **explicabl** | log error | audit failure logged but doesn't block request |
-
-**circuit breakers**: modules that make external calls (jwks validation, policy stores, redis) implement circuit breakers with configurable thresholds.
-
-**degraded mode**: when upstream dependencies fail, gatewaystack can operate in degraded mode with reduced governance guarantees (configurable per environment).
 
 ## architecture diagram
 
@@ -293,144 +460,8 @@ gatewaystack modules use a **fail-safe strategy** based on the security/availabi
   </p>
 </div>
 
-## inputs
-
-- oidc tokens / apps sdk identity tokens  
-- user context (user_id, org_id, roles, scopes)  
-- model request (messages, params, attachments)  
-- configured policies  
-- routing rules  
-- quota & budget settings  
-
-## outputs
-
-- authenticated, user-bound requests  
-- policy decisions (allow, deny, modify)  
-- routing decisions (provider/model/tool)  
-- enforced limits (rate, cost, budgets)  
-- full audit logs and runtime metadata  
-
-## shared requestcontext
-
-**CHANGE: Added note pointing to GitHub for full reference**
-
-all modules operate on a shared `RequestContext` object that flows through the pipeline. this context carries identity, content, metadata, and decisions from each module.
-
-> 📘 **full type definitions and integration examples**: see [`docs/reference/interfaces.md`](https://github.com/davidcrowe/gatewaystack/blob/main/docs/reference/interfaces.md) in the repo
-
-**core types** (simplified view):
-```ts
-// shared across modules
-export type Identity = {
-  user_id: string;
-  org_id?: string;
-  tenant?: string;
-  roles: string[];
-  scopes: string[];
-};
-
-export type ContentMetadata = {
-  contains_pii?: boolean;
-  classification?: string[];   // ["sensitive", "financial"]
-  risk_score?: number;         // 0–1
-  topics?: string[];
-  // extensible bag
-  [key: string]: unknown;
-};
-
-export type ModelRequest = {
-  model: string;               // "gpt-4", "smart-model"
-  tools?: string[];
-  max_tokens?: number;
-  messages: any[];
-  attachments?: any[];
-};
-
-export type PolicyDecision = {
-  effect: 'allow' | 'deny' | 'modify';
-  reasons: string[];
-  modifications?: Partial<ModelRequest>;
-};
-
-export type LimitsDecision = {
-  effect: 'ok' | 'throttle' | 'deny' | 'fallback' | 'degrade';
-  reasons: string[];
-  constraints?: {
-    max_tokens?: number;
-    max_cost?: number;
-  };
-};
-
-export type RoutingDecision = {
-  provider: string;           // "openai", "azure-openai"
-  model: string;              // concrete provider model
-  region?: string;
-  alias?: string;             // "smart-model"
-};
-
-export type UsageRecord = {
-  input_tokens: number;
-  output_tokens: number;
-  total_cost: number;
-  latency_ms: number;
-};
-
-export type RequestContext = {
-  request_id: string;
-  trace_id?: string;
-
-  identity?: Identity;
-  content?: {
-    messages: any[];
-    attachments?: any[];
-  };
-  metadata?: ContentMetadata;
-  modelRequest: ModelRequest;
-
-  policyDecision?: PolicyDecision;
-  limitsDecision?: LimitsDecision;
-  routingDecision?: RoutingDecision;
-  usage?: UsageRecord;
-
-  // arbitrary module extensions
-  [key: string]: unknown;
-};
-```
-
-## module boundaries
-
-**identifiabl**  
-- **input**: `RequestContext` with `modelRequest` + http auth header  
-- **reads**: authorization header, jwks endpoint  
-- **writes**: `identity`, `trace_id`, identity headers (`x-user-id`, `x-org-id`, etc.)  
-
-**transformabl**  
-- **input**: `RequestContext` with `identity`, `content`  
-- **reads**: `content` (messages, attachments)  
-- **writes**: `metadata` (pii flags, classification, risk score), redacted `content`, transformation logs  
-
-**validatabl**  
-- **input**: `identity`, `content`, `metadata`, `modelRequest`  
-- **reads**: all above + policy definitions  
-- **writes**: `policyDecision` (allow/deny/modify + reasons)  
-
-**limitabl** (two-phase)  
-- **pre-flight phase**:  
-  - **reads**: `identity`, `modelRequest`, `policyDecision`  
-  - **writes**: `limitsDecision` (constraints, budget availability)  
-- **accounting phase**:  
-  - **reads**: provider response (tokens, cost)  
-  - **writes**: `usage`, updates quota/budget stores, emits usage events  
-
-**proxyabl**  
-- **input**: `modelRequest`, `identity`, `metadata`, `policyDecision`, `limitsDecision`  
-- **reads**: routing rules, provider configurations, secrets  
-- **writes**: `routingDecision`, normalized provider response  
-
-**explicabl**  
-- **input**: full `RequestContext` + events from all modules  
-- **reads**: everything (for audit trail construction)  
-- **writes**: external logs and traces only (no modification of request context)  
+## error handling, inputs, outputs, and shared requestcontext
+→ [architecture.md](https://github.com/davidcrowe/gatewaystack/blob/main/docs/architecture.md)
 
 ## integrates with your existing stack
 
@@ -457,9 +488,6 @@ it acts as a drop-in governance layer without requiring changes to your applicat
 → [reference implementations](https://github.com/davidcrowe/gatewaystack/tree/main/examples)  
 
 ## links
-
-want to explore the modules in detail?  
-→ [view the gatewaystack github repo](https://github.com/davidcrowe/gatewaystack)
 
 want to contact us for enterprise deployments?  
 → [reducibl applied ai studio](https://reducibl.com)
