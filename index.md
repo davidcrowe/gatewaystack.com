@@ -9,11 +9,23 @@ title: gatewaystack
 
 an open-source control plane that makes AI agents **enterprise-ready** by enforcing user-scoped identity, policy, and audit trails on every model call.
 
-> ⚠️ early-stage: gatewaystack is under active development. the first layer, `identifiabl`, is live and published (`npm i identifiabl`). Additional modules (`transformabl`, `validatabl`, `limitabl`, `proxyabl`, `explicabl`) are on the roadmap.
+## the problem
+
+AI systems are being deployed without user-level identity.
+
+That means:
+
+- you can’t tell who triggered a model call
+- you can’t enforce per-user policy
+- you can’t audit or explain decisions
+
+And when something goes wrong, you have no clear owner
+
+GatewayStack exists to fix that.
 
 until now, most ai systems have been built around model access, not **user identity**.
 
-access typically happens through a single api key — often shared across a team, department, or entire organization.
+access typically happens through anonymous, shared credentials — often an api key used across a team, department, or entire organization.
 
 that makes it impossible to answer basic questions:
 
@@ -23,6 +35,15 @@ that makes it impossible to answer basic questions:
 - *what did it cost?*
 - *what model should it be sent to?*
 - *did it follow policy?*
+
+⚠️ Early-stage
+> gatewaystack is under active development
+> core identity, proxy, and audit layers are live
+> policy transformation, validation, and limits are on the roadmap
+
+→ [Follow for updates](linkedin.com/mrdavidcrowe)(operators, leaders, thinkers)
+→ [Inspect the code](https://github.com/davidcrowe/gatewaystack) (builders, skeptics, security folks)
+→ [Read the deeper argument on why GatewayStack exists](https://reducibl.com/writing) → (strategists, architects, decision-makers)
 
 ## at a glance
 
@@ -35,9 +56,9 @@ it lets you:
 - transform requests before they hit the model (for example, to remove pii)  
 - route, rate-limit, and log every call at the user level  
 
-→ [view the gatewaystack github repo](https://github.com/davidcrowe/gatewaystack)  
+→ [view the gatewaystack github repo]()  
 → [read the architecture overview](#designing-a-user-scoped-ai-trust--governance-gateway)  
-→ [contact reducibl for enterprise deployments](https://reducibl.com)  
+→ [contact reducibl for enterprise deployments]()  
 
 ## why now?
 
@@ -45,7 +66,7 @@ as organizations adopt agentic systems and user-specific ai workflows, identity,
 
 a new layer is required — centered around users, not models.
 
-> **the user-scoped trust and governance gateway**
+> **the user-scoped trust and governance gateway**  
 
 
 ### the three-party problem
@@ -64,7 +85,7 @@ these three parties all talk to each other, but they don’t share a common, cry
 - audit by user (*"who made this query?"* → can't answer)
 
 **without a unifying identity layer, you get:**
-- shared API keys (everyone sees everything, or no one sees anything)
+- shared api keys (everyone sees everything, or no one sees anything)
 - no enforcement ("who can use which models for what")
 - no audit trail (can't prove compliance)
 - enterprises block AI access entirely (too risky)
@@ -75,9 +96,9 @@ it shows up in two directions:
 
 ### when the three-party problem goes wrong
 
-while gatewaystack doesn't necessarily solve the root cause of each issue, it would have prevented these resources from being accessed without a cryptographically verified user identity on the request. 
+user-scoped requests act as a safety net for all kinds of common mistakes.
 
-user-scoped requests act as a safety net for all kinds of common mistakes:  
+while gatewaystack doesn't necessarily solve the root cause of each issue, it would have prevented these resources from being accessed without a cryptographically verified user identity on the request.  
 
 → [xAI Dev Leaks API Key for Private SpaceX, Tesla LLMs](https://krebsonsecurity.com/2025/05/xai-dev-leaks-api-key-for-private-spacex-tesla-llms/?utm_source=chatgpt.com)  
 → [DeepSeek database left user data, chat histories exposed for anyone to see](https://www.theverge.com/news/603163/deepseek-breach-ai-security-database-exposed?utm_source=chatgpt.com)  
@@ -278,7 +299,7 @@ gatewaystack is built for teams that need **user-scoped, auditable, policy-enfor
 - multi-tenant saas products
 - teams building apps sdk- and mcp-powered agents
 
-**example use cases:**
+## example use cases
 
 ### healthcare saas — hipaa-compliant AI diagnostics
 
@@ -352,11 +373,11 @@ many teams glue together jwt validation, headers, and logging inside their app o
 to get user-scoped AI governance with kong, you'd need to:
 1. install `jwt` plugin (validate tokens)
 2. install `request-transformer` plugin (inject headers)
-3. write custom Lua script to normalize identity claims
-4. write custom Lua script for scope-to-tool mapping
+3. write custom lua script to normalize identity claims
+4. write custom lua script for scope-to-tool mapping
 5. write custom plugin for pre-flight cost estimation
-6. build separate service for Protected Resource Metadata
-7. configure DCR flow manually
+6. build separate service for protected resource metadata
+7. configure dcr flow manually
 8. build custom audit log forwarding
 
 **signficant development + ongoing maintenance.**
