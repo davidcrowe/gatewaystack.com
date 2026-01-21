@@ -11,23 +11,25 @@ an open-source control plane that makes AI agents **enterprise-ready** by enforc
 
 ## the problem
 
-AI systems are being deployed without user-level identity.
+AI systems are being deployed without user-level identity as a first order design principle. 
 
-That means:
+that makes it difficult or impossible to:
 
-- you can’t tell who triggered a model call
-- you can’t enforce per-user policy
-- you can’t audit or explain decisions
+- tell who triggered a model call
+- enforce per-user policy
+- audit or explain decisions
 
-And when something goes wrong, you have no clear owner
+so when something goes wrong and your compliance team calls, you can’t reliably answer the who, what, where, when, or why. there is no clear owner — just shared access and shared blame.
 
-GatewayStack exists to fix that.
+gatewaystack exists to fix that.
 
-until now, most ai systems have been built around model access, not **user identity**.
+most ai systems have been built around model access, not **user identity**.
 
-access typically happens through anonymous, shared credentials — often an api key used across a team, department, or entire organization.
+some teams grant access through anonymous, shared credentials — often an api key used across a team, department, or entire organization.
 
-that makes it impossible to answer basic questions:
+other teams manage user identity throughout the llm flow, but in a non-standardized, glued together fashion. simply put, it's not their core competency.
+
+that makes it difficult or impossible to answer basic questions:
 
 - *who made this request?*
 - *does it contain sensitive info like pii that needs to be removed?*
@@ -36,14 +38,14 @@ that makes it impossible to answer basic questions:
 - *what model should it be sent to?*
 - *did it follow policy?*
 
-⚠️ Early-stage
+> ⚠️ early-stage
 > gatewaystack is under active development
 > core identity, proxy, and audit layers are live
 > policy transformation, validation, and limits are on the roadmap
 
-→ [Follow for updates](linkedin.com/mrdavidcrowe)(operators, leaders, thinkers)  
-→ [Inspect the code](https://github.com/davidcrowe/gatewaystack) (builders, skeptics, security folks)  
-→ [Read the deeper argument on why GatewayStack exists](https://reducibl.com/writing) (strategists, architects, decision-makers)  
+→ [follow for updates](linkedin.com/mrdavidcrowe) (operators, leaders, thinkers)  
+→ [inspect the code](https://github.com/davidcrowe/gatewaystack) (builders, skeptics, security folks)  
+→ [read the deeper argument on why gatewaystack exists](https://reducibl.com/writing) (strategists, architects, decision-makers)  
 
 ## at a glance
 
