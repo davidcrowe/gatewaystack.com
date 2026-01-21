@@ -41,9 +41,9 @@ that makes it impossible to answer basic questions:
 > core identity, proxy, and audit layers are live
 > policy transformation, validation, and limits are on the roadmap
 
-→ [Follow for updates](linkedin.com/mrdavidcrowe)(operators, leaders, thinkers)
-→ [Inspect the code](https://github.com/davidcrowe/gatewaystack) (builders, skeptics, security folks)
-→ [Read the deeper argument on why GatewayStack exists](https://reducibl.com/writing) → (strategists, architects, decision-makers)
+→ [Follow for updates](linkedin.com/mrdavidcrowe)(operators, leaders, thinkers)  
+→ [Inspect the code](https://github.com/davidcrowe/gatewaystack) (builders, skeptics, security folks)  
+→ [Read the deeper argument on why GatewayStack exists](https://reducibl.com/writing) (strategists, architects, decision-makers)  
 
 ## at a glance
 
