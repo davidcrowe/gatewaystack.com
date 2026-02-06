@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "postToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "bundle exec jekyll build 2>&1 | tail -5"
+      }
+    ]
+  }
+}

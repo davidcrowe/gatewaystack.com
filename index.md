@@ -11,7 +11,7 @@ an open-source control plane that makes AI agents **enterprise-ready** by enforc
 
 ## the problem
 
-AI systems are being deployed without user-level identity as a first order design principle. 
+AI systems are being deployed **without user-level identity as a first order design principle**. Often because the earliest enterprise genAI systems were not designed or intended to be multi-tenant.
 
 that makes it difficult or impossible to:
 
@@ -19,9 +19,9 @@ that makes it difficult or impossible to:
 - enforce per-user policy
 - audit or explain decisions
 
-so when something goes wrong and your compliance team calls, you can’t reliably answer the who, what, where, when, or why. there is no clear owner — just shared access and shared blame.
+when something goes wrong and your compliance team calls, **you can’t reliably answer the who, what, where, when, or why**. there is no clear owner — just shared access and shared blame.
 
-gatewaystack exists to fix that.
+***gatewaystack exists to fix that.***
 
 most ai systems have been built around model access, not **user identity**.
 
@@ -38,10 +38,10 @@ that makes it difficult or impossible to answer basic questions:
 - *what model should it be sent to?*
 - *did it follow policy?*
 
-> ⚠️ early-stage
-> gatewaystack is under active development
-> core identity, proxy, and audit layers are live
-> policy transformation, validation, and limits are on the roadmap
+> ⚠️ early-stage  
+> gatewaystack is under active development  
+> core identity, proxy, and audit layers are live  
+> policy transformation, validation, and limits are on the roadmap  
 
 → [follow for updates](linkedin.com/mrdavidcrowe) (operators, leaders, thinkers)  
 → [inspect the code](https://github.com/davidcrowe/gatewaystack) (builders, skeptics, security folks)  

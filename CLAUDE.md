@@ -64,3 +64,26 @@ bundle exec jekyll build # production build to _site/
 - B2B positioning — enterprise focus, technical audience
 - periwinkle (#E1E6F8) background matches reducibl brand
 - no waitlist — direct to GitHub or enterprise contact
+
+## Build Validation
+
+Always verify after making changes:
+1. `bundle exec jekyll build` — must succeed with zero errors
+2. Check `_site/` output for expected pages
+3. Validate HTML structure renders correctly
+
+## Deployment Pipeline
+
+Push to main → GitHub Pages auto-builds Jekyll → site live at gatewaystack.com.
+- CNAME file maps to gatewaystack.com
+- No custom CI/CD — relies on GitHub Pages built-in Jekyll support
+- `_site/` is generated output, never committed
+
+## Language & Content Conventions
+
+- This is a pure Jekyll/Markdown site — no TypeScript, no npm, no build tooling beyond Ruby/Bundler
+- Kramdown markdown processor
+- Minima theme (customized in _layouts/default.html)
+- Periwinkle (#E1E6F8) background matches reducibl brand identity
+- B2B enterprise positioning — technical audience, no consumer language
+- All headings and titles use lowercase aesthetic
