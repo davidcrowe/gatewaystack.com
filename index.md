@@ -38,14 +38,14 @@ that makes it difficult or impossible to answer basic questions:
 - *what model should it be sent to?*
 - *did it follow policy?*
 
-> ⚠️ early-stage  
-> gatewaystack is under active development  
-> core identity, proxy, and audit layers are live  
-> policy transformation, validation, and limits are on the roadmap  
+> ⚠️ early-stage
+> gatewaystack is under active development
+> all six core modules are live on npm
+> see per-module roadmaps below for what's built and what's coming
 
-→ [follow for updates](linkedin.com/mrdavidcrowe) (operators, leaders, thinkers)  
-→ [inspect the code](https://github.com/davidcrowe/gatewaystack) (builders, skeptics, security folks)  
-→ [read the deeper argument on why gatewaystack exists](https://reducibl.com/writing) (strategists, architects, decision-makers)  
+→ [follow for updates](https://www.linkedin.com/in/mrdavidcrowe) (operators, leaders, thinkers)
+→ [inspect the code](https://github.com/davidcrowe/gatewaystack) (builders, skeptics, security folks)
+→ [read the deeper argument on why gatewaystack exists](https://reducibl.com/writing) (strategists, architects, decision-makers)
 
 ## at a glance
 
@@ -58,9 +58,9 @@ it lets you:
 - transform requests before they hit the model (for example, to remove pii)  
 - route, rate-limit, and log every call at the user level  
 
-→ [view the gatewaystack github repo]()  
-→ [read the architecture overview](#designing-a-user-scoped-ai-trust--governance-gateway)  
-→ [contact reducibl for enterprise deployments]()  
+→ [view the gatewaystack github repo](https://github.com/davidcrowe/gatewaystack)
+→ [read the architecture overview](#designing-a-user-scoped-ai-trust--governance-gateway)
+→ [contact reducibl for enterprise deployments](https://reducibl.com)
 
 ## why now?
 
@@ -219,7 +219,9 @@ it provides the foundational primitives every agent ecosystem needs — starting
 
 every model call must be tied to a real user, tenant, and context. identifiabl verifies identity, handles oidc/apps sdk tokens, and attaches identity metadata to each request.
 
-> 📦 **implementation**: [`ai-auth-gateway`](https://github.com/davidcrowe/gatewaystack/tree/main/packages/ai-auth-gateway) (published)
+> 📦 **live**: OIDC/JWT via JWKS, claim mapping, multi-audience support
+> **roadmap**: Apps SDK tokens, multi-IdP federation
+> `npm install @gatewaystack/identifiabl`
 
 **2. [`transformabl`](https://transformabl.com) — content transformation & safety pre-processing**
 
@@ -227,70 +229,80 @@ before a request can be validated or routed, its content must be transformed int
 
 transformabl handles pre-model transformations, including:
 
-- pii detection and redaction  
-- content classification (legal, sensitive, unsafe)  
-- jailbreak / harmful-content detection  
-- anonymization and pseudonymization  
-- metadata extraction (topics, intent, sentiment, risk)  
-- routing hints for validatabl and proxyabl  
+- pii detection and redaction
+- content classification (legal, sensitive, unsafe)
+- jailbreak / harmful-content detection
+- anonymization and pseudonymization
+- metadata extraction (topics, intent, sentiment, risk)
+- routing hints for validatabl and proxyabl
 
 this layer ensures that the request entering validatabl and proxyabl is clean, safe, and structured, enabling fine-grained governance and more intelligent routing decisions.
 
-> 📦 **implementation**: `ai-content-gateway` (roadmap)
+> 📦 **live**: regex PII detection (email, phone, SSN, CC, IP, DOB), redaction, content classification (injection, jailbreak), regulatory flags
+> **roadmap**: ML/NER detection, pseudonymization, sentiment/intent analysis
+> `npm install @gatewaystack/transformabl`
 
 **3. [`validatabl`](https://validatabl.com) — access & policy enforcement**
 
 once a request is tied to a user, validatabl ensures it follows your rules:
 
-- tool- and model-level permissions  
-- org-level policies  
-- schema & safety checks  
-- tenant boundaries  
-- scopes & roles  
+- tool- and model-level permissions
+- org-level policies
+- schema & safety checks
+- tenant boundaries
+- scopes & roles
 
 this is where most governance decisions happen.
 
-> 📦 **implementation**: [`ai-policy-gateway`](https://github.com/davidcrowe/gatewaystack) (roadmap)
+> 📦 **live**: deny-by-default policy engine, scope/role checking, tool/model access control, tenant boundaries
+> **roadmap**: safety integration, policy caching, YAML policy definitions
+> `npm install @gatewaystack/validatabl`
 
 **4. [`limitabl`](https://limitabl.com) — rate limits, quotas, and spend controls**
 
 every user, org, or agent needs usage constraints:
 
-- per-user rate limits  
-- per-org quotas  
-- budget ceilings  
-- cost anomaly detection  
-- model/provider throttling  
+- per-user rate limits
+- per-org quotas
+- budget ceilings
+- cost anomaly detection
+- model/provider throttling
 
 limitabl enforces these constraints in two phases — **pre-flight checks** before execution and **usage accounting** after the model responds.
 
-> 📦 **implementation**: [`ai-rate-limit-gateway`](https://github.com/davidcrowe/gatewaystack) + `ai-cost-gateway` (roadmap)
+> 📦 **live**: sliding-window rate limits, budget tracking (preflight + accounting), agent guard
+> **roadmap**: Redis backend, persistent storage, anomaly detection
+> `npm install @gatewaystack/limitabl`
 
 **5. [`proxyabl`](https://proxyabl.com) — in-path routing & execution**
 
 proxyabl is the gateway execution layer — the in-path request processor that:
 
-- chooses providers or models  
-- forwards traffic to an llm  
-- injects identity and policy metadata  
-- applies routing rules  
-- respects constraints returned by limitabl  
+- chooses providers or models
+- forwards traffic to an llm
+- injects identity and policy metadata
+- applies routing rules
+- respects constraints returned by limitabl
 
-> 📦 **implementation**: [`ai-routing-gateway`](https://github.com/davidcrowe/gatewaystack) (roadmap)
+> 📦 **live**: auth mode routing (api_key, forward_bearer, service_oauth, user_oauth), SSRF protection, HTTP forwarding with identity injection, scope enforcement
+> **roadmap**: multi-provider selection, routing rules, failover, streaming
+> `npm install @gatewaystack/proxyabl`
 
 **6. [`explicabl`](https://explicabl.com) — observability & audit**
 
 the control plane must record:
 
-- who did what  
-- what model they used  
-- what policy decisions were triggered  
-- what the model cost  
-- what happened internally  
+- who did what
+- what model they used
+- what policy decisions were triggered
+- what the model cost
+- what happened internally
 
 explicabl provides the audit logs, traces, and metadata needed for trust, security, debugging, and compliance.
 
-> 📦 **implementation**: [`ai-observability-gateway`](https://github.com/davidcrowe/gatewaystack) + `ai-audit-gateway` (roadmap)
+> 📦 **live**: HTTP audit logging, Auth0 webhook integration, health endpoints
+> **roadmap**: model/cost tracking, policy decision logging, OpenTelemetry, storage backends
+> `npm install @gatewaystack/explicabl`
 
 ## who gatewaystack is for
 
@@ -496,6 +508,22 @@ gatewaystack works natively with:
 - **any llm provider** — openai, anthropic, google, azure, internal models  
 
 it acts as a drop-in governance layer without requiring changes to your application logic.
+
+## gatewaystack-connect
+
+**gatewaystack-connect** is the commercial multi-tenant MCP gateway built on gatewaystack's open-source modules.
+
+it provides a managed deployment where each tenant gets their own identity-verified gateway endpoint, with:
+
+- **multi-tenant routing** — path-based tenant isolation with Firestore-backed configuration
+- **custom connectors** — define HTTP tools in the dashboard, executed with SSRF protection and auth injection
+- **built-in integrations** — GitHub, Salesforce, and custom API connectors out of the box
+- **dashboard** — web UI for managing connectors, tools, policies, and audit logs
+- **MCP + ChatGPT Apps SDK** — native support for both protocols with identity threading
+
+all six gatewaystack modules are integrated into the request pipeline: every tool call is identified, transformed, validated, rate-limited, routed, and audited.
+
+→ [contact reducibl for enterprise deployments](https://reducibl.com)
 
 ## getting started
 
