@@ -87,3 +87,13 @@ Push to main → GitHub Pages auto-builds Jekyll → site live at gatewaystack.c
 - Periwinkle (#E1E6F8) background matches reducibl brand identity
 - B2B enterprise positioning — technical audience, no consumer language
 - All headings and titles use lowercase aesthetic
+
+---
+
+## git workflow
+
+- `main` — auto-deploys to GitHub Pages. Only push verified content.
+- `dev/<feature>` — for multi-step content changes
+- **Commit early and often** — after each meaningful edit
+- **No Co-Authored-By: Claude** — never include Claude attribution
+- Always run `bundle exec jekyll build` before pushing to main
